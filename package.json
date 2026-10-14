@@ -1,0 +1,51 @@
+{
+  "name": "momo-payment",
+  "version": "0.1.0",
+  "description": "Thư viện tích hợp cổng thanh toán MoMo API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./momo": {
+      "types": "./dist/momo.d.ts",
+      "import": "./dist/momo.js"
+    },
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "import": "./dist/constants.js"
+    },
+    "./types-only": {
+      "types": "./dist/types-only.d.ts",
+      "import": "./dist/types-only.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "test": "npm run build && node --test test.js",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "keywords": [
+    "momo",
+    "payment",
+    "vietnam",
+    "gateway",
+    "typescript"
+  ],
+  "author": "petertuananh",
+  "license": "MIT"
+}
