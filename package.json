@@ -47,5 +47,6 @@
     "typescript"
   ],
   "author": "petertuananh",
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://momo.js.org"
 }
