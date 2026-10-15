@@ -1,6 +1,6 @@
 {
   "name": "momo-payment",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Thư viện tích hợp cổng thanh toán MoMo API",
   "type": "module",
   "main": "./dist/index.js",
@@ -48,5 +48,12 @@
   ],
   "author": "petertuananh",
   "license": "MIT",
-  "homepage": "https://momo.js.org"
+  "homepage": "https://momo.js.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petertuananh/MoMo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/petertuananh/MoMo/issues"
+  }
 }

@@ -8,6 +8,13 @@
 
 Hỗ trợ TypeScript, modular imports, tree-shaking và không có runtime dependency.
 
+## 🔗 Thông tin thư viện
+
+- [Website](https://momo.js.org)
+- [npm](https://www.npmjs.com/package/momo-payment)
+- [GitHub](https://github.com/petertuananh/MoMo)
+- [Ví dụ tích hợp](https://github.com/petertuananh/momo-payment-nodejs-example)
+
 > ⚠️ Đây là thư viện **backend-only**. Không import `MomoClient` trong React,
 > Vue hoặc Angular vì `secretKey` phải được giữ ở server.
 
@@ -32,6 +39,7 @@ Hỗ trợ TypeScript, modular imports, tree-shaking và không có runtime depe
 - [MoMo API Confirm](https://developers.momo.vn/v3/docs/payment/api/wallet/onetime/confirm)
 - [MoMo API Refund](https://developers.momo.vn/v3/docs/payment/api/wallet/onetime/refund)
 - [GitHub](https://github.com/petertuananh/MoMo)
+- [Ví dụ Node.js](https://github.com/petertuananh/momo-payment-nodejs-example)
 
 ## 🚀 Cài đặt
 
