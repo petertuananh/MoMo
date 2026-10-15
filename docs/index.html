@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Thư viện Node.js và TypeScript tích hợp cổng thanh toán MoMo.">
+    <meta name="description" content="momo-payment - SDK Node.js và TypeScript tích hợp MoMo API v2 với HMAC-SHA256, IPN verification và đầy đủ API giao dịch.">
+    <meta name="theme-color" content="#1d5d4e">
     <title>momo-payment - MoMo Node.js SDK</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
@@ -12,8 +13,10 @@
       <nav class="nav container">
         <a class="brand" href="/">momo<span>-payment</span></a>
         <div class="nav-links">
+          <a href="#overview">Tổng quan</a>
           <a href="#install">Cài đặt</a>
           <a href="#usage">Sử dụng</a>
+          <a href="#api">API</a>
           <a href="#ipn">IPN</a>
           <a href="https://github.com/petertuananh/MoMo">GitHub ↗</a>
         </div>
@@ -21,25 +24,32 @@
       <div class="container hero-content">
         <p class="eyebrow">NODE.JS · TYPESCRIPT · BACKEND SDK</p>
         <h1>Thanh toán MoMo,<br><em>đơn giản hơn.</em></h1>
-        <p class="lead">SDK tối giản cho MoMo API v2 với signing HMAC-SHA256, xác thực IPN và TypeScript đầy đủ.</p>
+        <p class="lead">SDK tối giản cho MoMo API v2 với signing HMAC-SHA256, xác thực IPN timing-safe và TypeScript đầy đủ.</p>
         <div class="actions">
           <a class="button primary" href="#install">Bắt đầu ngay</a>
-          <a class="button secondary" href="https://github.com/petertuananh/MoMo">Xem mã nguồn</a>
+          <a class="button secondary" href="https://www.npmjs.com/package/momo-payment">Xem trên npm ↗</a>
         </div>
         <div class="install-line"><span>$</span> npm install momo-payment</div>
       </div>
     </header>
 
     <main>
-      <section class="section container">
+      <section id="overview" class="section container">
         <div class="section-heading">
-          <p class="eyebrow">TẠI SAO MOMO-PAYMENT?</p>
-          <h2>Đủ mạnh cho production.<br>Đủ gọn để bắt đầu.</h2>
+          <p class="eyebrow">MOMO-PAYMENT · V0.2.1</p>
+          <h2>SDK backend đầy đủ<br>cho MoMo API v2.</h2>
+          <p class="muted">Tạo thanh toán, nhận IPN, tra cứu giao dịch, confirm, cancel và refund trong một client TypeScript gọn nhẹ.</p>
         </div>
         <div class="feature-grid">
-          <article><div class="icon">⚡</div><h3>Không phụ thuộc</h3><p>Dùng fetch và crypto có sẵn trong Node.js 18+. Không cần axios hay framework HTTP.</p></article>
-          <article><div class="icon">⌁</div><h3>TypeScript-first</h3><p>Types đầy đủ, import theo module và types-only cho ứng dụng frontend.</p></article>
+          <article><div class="icon">⚡</div><h3>Không phụ thuộc</h3><p>Dùng <code>fetch</code> và <code>crypto</code> có sẵn trong Node.js 18+. Không cần axios hay framework HTTP.</p></article>
+          <article><div class="icon">⌁</div><h3>TypeScript-first</h3><p>Types đầy đủ, modular imports, tree-shaking và hỗ trợ Express, Fastify, NestJS hoặc Node.js thuần.</p></article>
           <article><div class="icon">✓</div><h3>An toàn mặc định</h3><p>HMAC-SHA256, timing-safe signature comparison và secret key chỉ nằm ở backend.</p></article>
+        </div>
+        <div class="link-row">
+          <a class="text-link" href="https://momo.js.org">Website ↗</a>
+          <a class="text-link" href="https://www.npmjs.com/package/momo-payment">npm ↗</a>
+          <a class="text-link" href="https://github.com/petertuananh/MoMo">GitHub ↗</a>
+          <a class="text-link" href="https://github.com/petertuananh/momo-payment-nodejs-example">Ví dụ tích hợp ↗</a>
         </div>
       </section>
 
@@ -48,32 +58,59 @@
           <div>
             <p class="eyebrow">01 · CÀI ĐẶT</p>
             <h2>Cài đặt trong vài giây.</h2>
-            <p class="muted">Yêu cầu Node.js 18 hoặc mới hơn.</p>
+            <p class="muted">Yêu cầu Node.js 18 hoặc mới hơn. Package không có runtime dependency.</p>
+            <p class="muted">Thư viện chạy ở server. Không đưa <code>secretKey</code> vào React, Vue, Angular hoặc bất kỳ bundle frontend nào.</p>
           </div>
           <pre><code><span class="dim"># npm</span>
-npm install momo-payment</code></pre>
+npm install momo-payment
+
+<span class="dim"># pnpm</span>
+pnpm add momo-payment
+
+<span class="dim"># yarn</span>
+yarn add momo-payment</code></pre>
         </div>
       </section>
 
       <section id="usage" class="section container">
         <div class="split usage">
           <div>
-            <p class="eyebrow">02 · TẠO PAYMENT</p>
-            <h2>Tạo payment URL.</h2>
-            <p class="muted">MoMo trả về <code>payUrl</code>. Bạn có thể redirect người dùng hoặc trả URL cho frontend.</p>
+            <p class="eyebrow">02 · KHỞI TẠO CLIENT</p>
+            <h2>Kết nối sandbox hoặc production.</h2>
+            <p class="muted">Lấy <code>partnerCode</code>, <code>accessKey</code> và <code>secretKey</code> từ MoMo Developer Portal. Sandbox là lựa chọn an toàn để phát triển và kiểm thử.</p>
             <a class="text-link" href="https://developers.momo.vn/">MoMo Developer Portal ↗</a>
           </div>
-          <pre><code><span class="keyword">import</span> { MomoClient,
-  MOMO_SANDBOX_URL } <span class="keyword">from</span> <span class="string">"momo-payment"</span>;
+          <pre><code><span class="keyword">import</span> {
+  MomoClient,
+  MOMO_SANDBOX_URL,
+  MOMO_PRODUCTION_URL
+} <span class="keyword">from</span> <span class="string">"momo-payment"</span>;
 
 <span class="keyword">const</span> momo = <span class="keyword">new</span> MomoClient({
   partnerCode: process.env.MOMO_PARTNER_CODE,
   accessKey: process.env.MOMO_ACCESS_KEY,
   secretKey: process.env.MOMO_SECRET_KEY,
-  endpoint: MOMO_SANDBOX_URL
+  endpoint: MOMO_SANDBOX_URL,
+  timeoutMs: 30_000
 });
 
-<span class="keyword">const</span> payment = <span class="keyword">await</span> momo.createPayment({
+<span class="comment">// Production: endpoint: MOMO_PRODUCTION_URL</span></code></pre>
+        </div>
+        <div class="notice">
+          <strong>Timeout tối thiểu là 30 giây.</strong>
+          Mọi request tới MoMo yêu cầu <code>timeoutMs &gt;= 30_000</code>. Giá trị nhỏ hơn sẽ bị từ chối với mã <code>INVALID_ARGUMENT</code>.
+        </div>
+      </section>
+
+      <section id="api" class="section tinted">
+        <div class="container">
+          <p class="eyebrow">03 · PAYMENT API</p>
+          <h2>Một client, toàn bộ vòng đời giao dịch.</h2>
+          <div class="api-grid">
+            <article class="api-card">
+              <h3>Tạo payment URL</h3>
+              <p>Gọi <code>createPayment()</code> để tạo giao dịch và redirect người dùng tới <code>payUrl</code>.</p>
+              <pre><code><span class="keyword">const</span> payment = <span class="keyword">await</span> momo.createPayment({
   orderId: <span class="string">"ORDER_123"</span>,
   amount: <span class="number">100000</span>,
   orderInfo: <span class="string">"Thanh toan don hang"</span>,
@@ -82,33 +119,128 @@ npm install momo-payment</code></pre>
 });
 
 console.log(payment.payUrl);</code></pre>
+            </article>
+            <article class="api-card">
+              <h3>Query giao dịch</h3>
+              <p>Tra cứu trạng thái mới nhất theo <code>orderId</code> và một <code>requestId</code> duy nhất.</p>
+              <pre><code><span class="keyword">const</span> status = <span class="keyword">await</span> momo.queryTransaction({
+  requestId: <span class="string">"QUERY_ORDER_123"</span>,
+  orderId: <span class="string">"ORDER_123"</span>,
+  lang: <span class="string">"vi"</span>
+});
+
+console.log(status.resultCode, status.message);</code></pre>
+            </article>
+            <article class="api-card">
+              <h3>Confirm hoặc cancel</h3>
+              <p>Với giao dịch authorize, dùng <code>capture</code> để nhận tiền hoặc <code>cancel</code> để hủy.</p>
+              <pre><code><span class="keyword">await</span> momo.confirmPayment({
+  requestId: <span class="string">"CONFIRM_ORDER_123"</span>,
+  orderId: <span class="string">"ORDER_123"</span>,
+  requestType: <span class="string">"capture"</span>,
+  amount: <span class="number">100000</span>,
+  lang: <span class="string">"vi"</span>
+});</code></pre>
+            </article>
+            <article class="api-card">
+              <h3>Refund và query refund</h3>
+              <p>Hoàn tiền toàn phần hoặc một phần cho giao dịch đã thanh toán thành công.</p>
+              <pre><code><span class="keyword">const</span> refund = <span class="keyword">await</span> momo.refundPayment({
+  requestId: <span class="string">"REFUND_ORDER_123"</span>,
+  orderId: <span class="string">"REFUND_123"</span>,
+  amount: <span class="number">50000</span>,
+  transId: status.transId,
+  description: <span class="string">"Khach hang yeu cau hoan tien"</span>
+});
+
+<span class="keyword">await</span> momo.queryRefund({
+  requestId: <span class="string">"REFUND_QUERY_123"</span>,
+  orderId: refund.orderId
+});</code></pre>
+            </article>
+          </div>
+          <div class="endpoint-list">
+            <div><strong>createPayment()</strong><span>POST /v2/gateway/api/create</span></div>
+            <div><strong>queryTransaction()</strong><span>POST /v2/gateway/api/query</span></div>
+            <div><strong>confirmPayment()</strong><span>POST /v2/gateway/api/confirm</span></div>
+            <div><strong>refundPayment()</strong><span>POST /v2/gateway/api/refund</span></div>
+            <div><strong>queryRefund()</strong><span>POST /v2/gateway/api/refund/query</span></div>
+          </div>
         </div>
       </section>
 
-      <section id="ipn" class="section tinted">
-        <div class="container split">
+      <section id="ipn" class="section container">
+        <div class="split">
           <div>
-            <p class="eyebrow">03 · XÁC THỰC IPN</p>
-            <h2>Không bỏ sót giao dịch.</h2>
-            <p class="muted">Luôn xác thực signature, orderId, amount và kiểm tra idempotency trước khi cập nhật database.</p>
+            <p class="eyebrow">04 · IPN CALLBACK</p>
+            <h2>Xác thực trước khi ghi nhận thanh toán.</h2>
+            <p class="muted">MoMo gọi <code>ipnUrl</code> sau khi trạng thái giao dịch thay đổi. Luôn xác thực chữ ký, đối chiếu <code>orderId</code>, <code>amount</code>, <code>resultCode</code> và xử lý idempotency trước khi cập nhật database.</p>
+            <p class="muted">Chuỗi IPN được ký bằng HMAC-SHA256 với <code>accessKey</code> ở đầu chuỗi và so sánh bằng timing-safe comparison.</p>
           </div>
-          <pre><code>app.post(<span class="string">"/payments/momo/ipn"</span>, (req, res) =&gt; {
+          <pre><code><span class="keyword">import</span> express <span class="keyword">from</span> <span class="string">"express"</span>;
+
+<span class="keyword">const</span> app = express();
+app.use(express.json());
+
+app.post(<span class="string">"/payments/momo/ipn"</span>, <span class="keyword">async</span> (req, res) =&gt; {
   <span class="keyword">if</span> (!momo.verifySignature(req.body)) {
     <span class="keyword">return</span> res.status(<span class="number">400</span>).json({
-      success: <span class="keyword">false</span>
+      success: <span class="keyword">false</span>,
+      message: <span class="string">"Invalid MoMo signature"</span>
     });
   }
 
-  <span class="comment">// Update transaction after idempotency checks.</span>
+  <span class="comment">// Đối chiếu order/amount và bỏ qua callback đã xử lý.</span>
+  <span class="keyword">if</span> (req.body.resultCode === <span class="number">0</span>) {
+    <span class="comment">// Update transaction after idempotency checks.</span>
+  }
+
   <span class="keyword">return</span> res.json({ success: <span class="keyword">true</span> });
 });</code></pre>
+        </div>
+      </section>
+
+      <section id="errors" class="section tinted">
+        <div class="container split">
+          <div>
+            <p class="eyebrow">05 · ERROR HANDLING</p>
+            <h2>Lỗi rõ ràng, dễ xử lý.</h2>
+            <p class="muted"><code>MomoApiError</code> dành cho lỗi từ MoMo hoặc HTTP failure. <code>MomoError</code> dành cho lỗi input, timeout, network và response không hợp lệ.</p>
+          </div>
+          <pre><code><span class="keyword">import</span> {
+  MomoApiError,
+  MomoError
+} <span class="keyword">from</span> <span class="string">"momo-payment"</span>;
+
+<span class="keyword">try</span> {
+  <span class="keyword">await</span> momo.createPayment(<span class="comment">/* ... */</span>);
+} <span class="keyword">catch</span> (error) {
+  <span class="keyword">if</span> (error <span class="keyword">instanceof</span> MomoApiError) {
+    console.error(error.response.resultCode);
+  } <span class="keyword">else if</span> (error <span class="keyword">instanceof</span> MomoError) {
+    console.error(error.code, error.message);
+  }
+}</code></pre>
+        </div>
+      </section>
+
+      <section class="section container">
+        <div class="section-heading">
+          <p class="eyebrow">06 · TÀI NGUYÊN</p>
+          <h2>Bắt đầu từ ví dụ<br>hoặc đọc source.</h2>
+        </div>
+        <div class="resource-grid">
+          <a href="https://github.com/petertuananh/momo-payment-nodejs-example"><strong>Ví dụ Node.js ↗</strong><span>Ứng dụng mẫu tích hợp momo-payment.</span></a>
+          <a href="https://github.com/petertuananh/MoMo"><strong>GitHub repository ↗</strong><span>Source code, tests và hướng dẫn phát triển.</span></a>
+          <a href="https://www.npmjs.com/package/momo-payment"><strong>npm package ↗</strong><span>Phiên bản phát hành và lịch sử package.</span></a>
+          <a href="https://developers.momo.vn/"><strong>MoMo Developer Portal ↗</strong><span>Tài liệu API và thông tin credential.</span></a>
         </div>
       </section>
     </main>
 
     <footer class="footer container">
       <span>momo-payment · MIT License</span>
-      <span>Made for Vietnamese developers 🇻🇳</span>
+      <span>Made for Vietnamese developers 🇻🇳 · <a href="https://github.com/petertuananh/MoMo">GitHub ↗</a></span>
     </footer>
   </body>
 </html>
