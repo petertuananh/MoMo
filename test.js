@@ -31,10 +31,13 @@ function createIpnPayload(overrides = {}) {
   };
 
   const rawSignature = [
-    "amount", "extraData", "message", "orderId", "orderInfo",
-    "orderType", "partnerCode", "payType", "requestId",
-    "responseTime", "resultCode", "transId"
-  ].map((field) => `${field}=${payload[field] ?? ""}`).join("&");
+    `accessKey=${clientOptions.accessKey}`,
+    ...[
+      "amount", "extraData", "message", "orderId", "orderInfo",
+      "orderType", "partnerCode", "payType", "requestId",
+      "responseTime", "resultCode", "transId"
+    ].map((field) => `${field}=${payload[field] ?? ""}`)
+  ].join("&");
 
   return {
     ...payload,

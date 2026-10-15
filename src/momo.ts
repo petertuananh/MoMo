@@ -207,8 +207,11 @@ export class MomoClient {
   verifySignature(payload: MomoIpnPayload): boolean {
     const signature = typeof payload.signature === "string" ? payload.signature : "";
     if (!signature) return false;
-    const rawSignature = IPN_SIGNATURE_FIELDS
-      .map((field) => `${field}=${payload[field] ?? ""}`).join("&");
+    const rawSignature = [
+      `accessKey=${this.options.accessKey}`,
+      ...IPN_SIGNATURE_FIELDS.map((field) => `${field}=${payload[field] ?? ""}`)
+    ]
+      .join("&");
     return safeSignatureEquals(sign(this.options.secretKey, rawSignature), signature);
   }
 }
