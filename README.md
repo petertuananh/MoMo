@@ -14,6 +14,9 @@ Hỗ trợ TypeScript, modular imports, tree-shaking và không có runtime depe
 ## ✨ Tính năng
 
 - Tạo payment request MoMo v2 (`captureWallet`, `payWithMethod`).
+- Tra cứu trạng thái giao dịch.
+- Confirm hoặc cancel giao dịch đã được authorize.
+- Hoàn tiền toàn phần, một phần và tra cứu kết quả hoàn tiền.
 - HMAC-SHA256 signing theo chuẩn MoMo.
 - Xác thực chữ ký IPN bằng so sánh timing-safe.
 - Sandbox mặc định, hỗ trợ production và custom endpoint.
@@ -25,6 +28,9 @@ Hỗ trợ TypeScript, modular imports, tree-shaking và không có runtime depe
 
 - [MoMo Developer Portal](https://developers.momo.vn/)
 - [MoMo API Create Payment](https://developers.momo.vn/v3/docs/payment/api/wallet/onetime/create)
+- [MoMo API Query Transaction](https://developers.momo.vn/v3/docs/payment/api/wallet/onetime/query)
+- [MoMo API Confirm](https://developers.momo.vn/v3/docs/payment/api/wallet/onetime/confirm)
+- [MoMo API Refund](https://developers.momo.vn/v3/docs/payment/api/wallet/onetime/refund)
 - [GitHub](https://github.com/petertuananh/MoMo)
 
 ## 🚀 Cài đặt
@@ -81,6 +87,24 @@ const momo = new MomoClient({
 
 Production sử dụng `endpoint: MOMO_PRODUCTION_URL`.
 
+Mọi API của client đều yêu cầu `timeoutMs` tối thiểu `30_000` (30 giây), theo
+yêu cầu của MoMo. Giá trị nhỏ hơn sẽ bị từ chối với lỗi `INVALID_ARGUMENT`.
+
+## 🗺️ Chức năng và endpoint MoMo
+
+| Chức năng trong thư viện | Method | HTTP request MoMo |
+| --- | --- | --- |
+| Tạo payment và lấy `payUrl` | `createPayment()` | `POST /v2/gateway/api/create` |
+| Kiểm tra trạng thái giao dịch | `queryTransaction()` | `POST /v2/gateway/api/query` |
+| Confirm giao dịch đã authorize | `confirmPayment({ requestType: "capture" })` | `POST /v2/gateway/api/confirm` |
+| Cancel giao dịch đã authorize | `confirmPayment({ requestType: "cancel" })` | `POST /v2/gateway/api/confirm` |
+| Refund giao dịch | `refundPayment()` | `POST /v2/gateway/api/refund` |
+| Kiểm tra kết quả refund | `queryRefund()` | `POST /v2/gateway/api/refund/query` |
+
+Các method trên gửi request JSON đến `endpoint` đã cấu hình, tự tạo chữ ký
+HMAC-SHA256 bằng `secretKey`, parse response JSON và ném `MomoApiError` khi
+MoMo trả `resultCode` khác `0` hoặc HTTP status không thành công.
+
 ## 🔗 Tạo payment URL
 
 MoMo trả về `payUrl`; ứng dụng tự quyết định redirect hoặc trả URL cho frontend.
@@ -112,6 +136,119 @@ const requestBody = momo.buildCreatePaymentRequest({
   redirectUrl: "https://yourapp.com/payments/momo/return",
   ipnUrl: "https://yourapp.com/payments/momo/ipn"
 });
+```
+
+## 🔎 Kiểm tra trạng thái giao dịch
+
+Sử dụng `queryTransaction()` để lấy trạng thái mới nhất của một `orderId`.
+`requestId` là mã duy nhất cho request query.
+
+```ts
+const status = await momo.queryTransaction({
+  requestId: `QUERY_${transaction.id}`,
+  orderId: transaction.id,
+  lang: "vi"
+});
+
+console.log(status.resultCode, status.message, status.transId);
+```
+
+Request được gửi đến `POST /v2/gateway/api/query` với chữ ký theo thứ tự:
+
+```text
+accessKey → orderId → partnerCode → requestId
+```
+
+## ✅ Confirm hoặc cancel payment
+
+Chỉ gọi API này khi giao dịch có trạng thái **9000: Authorized**. Dùng
+`requestType: "capture"` để nhận tiền hoặc `"cancel"` để hủy authorization và
+hoàn tiền đang bị giữ cho khách hàng.
+
+### Confirm giao dịch
+
+```ts
+const confirmed = await momo.confirmPayment({
+  requestId: `CONFIRM_${transaction.id}`,
+  orderId: transaction.id,
+  requestType: "capture",
+  amount: transaction.amount,
+  lang: "vi"
+});
+```
+
+### Cancel giao dịch
+
+```ts
+const cancelled = await momo.confirmPayment({
+  requestId: `CANCEL_${transaction.id}`,
+  orderId: transaction.id,
+  requestType: "cancel",
+  amount: transaction.amount,
+  description: "Huy giao dich do khong xu ly duoc don hang",
+  lang: "vi"
+});
+```
+
+Cả hai thao tác đều gọi `POST /v2/gateway/api/confirm`. MoMo dùng `requestId`
+để kiểm soát idempotency, vì vậy mỗi request cần một ID ổn định và duy nhất.
+
+## ↩️ Refund payment
+
+`refundPayment()` dùng để hoàn tiền toàn phần hoặc một phần cho giao dịch đã
+thanh toán thành công. `amount` là số tiền cần hoàn, còn `transId` là
+transaction ID do MoMo trả về.
+
+```ts
+const refund = await momo.refundPayment({
+  requestId: `REFUND_${transaction.id}`,
+  orderId: `REFUND_ORDER_${transaction.id}`,
+  amount: 50000,
+  transId: status.transId as number,
+  description: "Khach hang yeu cau hoan tien",
+  lang: "vi"
+});
+```
+
+Request được gửi đến `POST /v2/gateway/api/refund`. `orderId` của refund phải
+khác `orderId` của giao dịch mua ban đầu. `amount` phải là số nguyên dương VND.
+
+Với giao dịch Buy Now Pay Later cần hoàn theo từng item, truyền thêm
+`transGroup`:
+
+```ts
+await momo.refundPayment({
+  requestId: "REFUND_ORDER_123",
+  orderId: "REFUND_123",
+  amount: 350000,
+  transId: 144492817,
+  transGroup: [
+    { itemId: "SKU_1", amount: 200000, transId: 2824581984 },
+    { itemId: "SKU_2", amount: 150000, transId: 2824581983 }
+  ]
+});
+```
+
+## 🔁 Kiểm tra kết quả refund
+
+Sau khi gọi refund, dùng `queryRefund()` để tra cứu trạng thái refund theo
+`orderId` của giao dịch refund:
+
+```ts
+const refundStatus = await momo.queryRefund({
+  requestId: `REFUND_QUERY_${transaction.id}`,
+  orderId: `REFUND_ORDER_${transaction.id}`,
+  lang: "vi"
+});
+
+console.log(refundStatus.resultCode, refundStatus.refundTransList);
+```
+
+Method này gọi `POST /v2/gateway/api/refund/query`. `queryRefund()` sử dụng
+cùng định dạng chữ ký query của MoMo:
+
+```text
+accessKey → orderId → partnerCode → requestId
 ```
 
 ## ✅ Xác thực IPN

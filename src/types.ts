@@ -1,4 +1,5 @@
 export type MomoRequestType = "captureWallet" | "payWithMethod";
+export type MomoConfirmRequestType = "capture" | "cancel";
 
 export interface MomoClientOptions {
   partnerCode: string;
@@ -53,6 +54,47 @@ export interface MomoCreatePaymentResponse {
   deeplink?: string;
   qrCodeUrl?: string;
   signature?: string;
+  [key: string]: unknown;
+}
+
+export interface TransactionQueryOptions {
+  requestId: string;
+  orderId: string;
+  lang?: "vi" | "en";
+}
+
+export interface ConfirmPaymentOptions {
+  requestId: string;
+  orderId: string;
+  requestType: MomoConfirmRequestType;
+  amount: number | string;
+  description?: string;
+  lang?: "vi" | "en";
+}
+
+export interface RefundTransactionItem {
+  itemId: string;
+  amount: number | string;
+  transId: number | string;
+}
+
+export interface RefundPaymentOptions {
+  requestId: string;
+  orderId: string;
+  amount: number | string;
+  transId: number | string;
+  description?: string;
+  transGroup?: RefundTransactionItem[];
+  lang?: "vi" | "en";
+}
+
+export interface RefundQueryOptions {
+  requestId: string;
+  orderId: string;
+  lang?: "vi" | "en";
+}
+
+export interface MomoTransactionResponse {
   [key: string]: unknown;
 }
 

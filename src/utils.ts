@@ -9,7 +9,11 @@ export function requireText(value: string | undefined, name: string): string {
 }
 
 export function normalizeAmount(amount: number | string): string {
-  const value = typeof amount === "number" ? amount.toString() : amount.trim();
+  if (typeof amount === "number" &&
+    (!Number.isSafeInteger(amount) || amount <= 0)) {
+    throw new MomoError("amount must be a positive integer in VND.", "INVALID_AMOUNT");
+  }
+  const value = typeof amount === "number" ? String(amount) : amount.trim();
   if (!/^\d+$/.test(value) || BigInt(value) <= 0n) {
     throw new MomoError("amount must be a positive integer in VND.", "INVALID_AMOUNT");
   }

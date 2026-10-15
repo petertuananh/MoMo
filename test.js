@@ -75,6 +75,7 @@ async function createPaymentTest() {
   assert.equal(requestUrl, "https://test-payment.momo.vn/v2/gateway/api/create");
   assert.equal(requestBody.partnerCode, "MOMO");
   assert.equal(requestBody.amount, "100000");
+  assert.equal(requestBody.extraData, "");
   assert.equal(requestBody.requestId, "ORDER_123");
   assert.equal(requestBody.requestType, "captureWallet");
   assert.equal(requestBody.lang, "vi");
@@ -85,16 +86,20 @@ async function createPaymentTest() {
 function requestValidationTest() {
   const client = new MomoClient(clientOptions);
 
-  assert.throws(
-    () => client.buildCreatePaymentRequest({
-      orderId: "ORDER_123",
-      amount: 0,
-      orderInfo: "Test",
-      redirectUrl: "https://example.com/return",
-      ipnUrl: "https://example.com/ipn"
-    }),
-    (error) => error instanceof MomoError && error.code === "INVALID_AMOUNT"
-  );
+  const createOptions = (amount) => ({
+    orderId: "ORDER_123",
+    amount,
+    orderInfo: "Test",
+    redirectUrl: "https://example.com/return",
+    ipnUrl: "https://example.com/ipn"
+  });
+
+  for (const amount of [0, -1, 100.5, "100.5", Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(
+      () => client.buildCreatePaymentRequest(createOptions(amount)),
+      (error) => error instanceof MomoError && error.code === "INVALID_AMOUNT"
+    );
+  }
 }
 
 async function apiErrorTest() {
@@ -138,7 +143,66 @@ function ipnSignatureTest() {
   );
 }
 
+async function transactionApisTest() {
+  const requests = [];
+  const client = new MomoClient({
+    ...clientOptions,
+    fetch: async (url, init) => {
+      requests.push({ url, body: JSON.parse(init.body) });
+      return new Response(JSON.stringify({ resultCode: 0, message: "Successful." }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+  });
+
+  await client.queryTransaction({
+    requestId: "REQ_QUERY",
+    orderId: "ORDER_123",
+    lang: "en"
+  });
+  await client.confirmPayment({
+    requestId: "REQ_CONFIRM",
+    orderId: "ORDER_123",
+    requestType: "capture",
+    amount: 100000
+  });
+  await client.refundPayment({
+    requestId: "REQ_REFUND",
+    orderId: "REFUND_123",
+    amount: 50000,
+    transId: 123456789,
+    description: "Customer request"
+  });
+  await client.queryRefund({
+    requestId: "REQ_REFUND_QUERY",
+    orderId: "REFUND_123"
+  });
+
+  assert.deepEqual(requests.map(({ url }) => url), [
+    "https://test-payment.momo.vn/v2/gateway/api/query",
+    "https://test-payment.momo.vn/v2/gateway/api/confirm",
+    "https://test-payment.momo.vn/v2/gateway/api/refund",
+    "https://test-payment.momo.vn/v2/gateway/api/refund/query"
+  ]);
+  assert.equal(requests[0].body.lang, "en");
+  assert.equal(requests[1].body.amount, "100000");
+  assert.equal(requests[1].body.requestType, "capture");
+  assert.equal(requests[2].body.amount, "50000");
+  assert.equal(requests[2].body.description, "Customer request");
+  for (const { body } of requests) assert.match(body.signature, /^[a-f0-9]{64}$/);
+}
+
+function minimumTimeoutTest() {
+  assert.throws(
+    () => new MomoClient({ ...clientOptions, timeoutMs: 29_999 }),
+    (error) => error instanceof MomoError && error.code === "INVALID_ARGUMENT"
+  );
+}
+
 test("createPayment tạo request và nhận payUrl", createPaymentTest);
 test("buildCreatePaymentRequest từ chối amount không hợp lệ", requestValidationTest);
 test("createPayment ném MomoApiError khi MoMo trả lỗi", apiErrorTest);
 test("verifySignature xác thực và từ chối IPN bị thay đổi", ipnSignatureTest);
+test("các API query, confirm, refund và refund query tạo request đúng", transactionApisTest);
+test("timeout tối thiểu của MoMo là 30 giây", minimumTimeoutTest);
